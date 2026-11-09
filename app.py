@@ -11,10 +11,85 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import streamlit as st
 
-st.set_page_config(page_title="Crescimento Populacional | Censo 2022",
-                   page_icon="📈", layout="wide")
+st.set_page_config(page_title="CP Analytics | Crescimento Populacional",
+                   page_icon="✦", layout="wide")
+
+# ------------------------------------------------------------------ IDENTIDADE VISUAL
+OURO, OURO_ESC, OURO_CLARO, GRAFITE = "#C9A227", "#8A6D12", "#F7F0DC", "#1F2430"
+PALETA = ["#C9A227", "#1F2430", "#8A6D12", "#6B7280", "#E3C565", "#A16207"]
+ESCALA_OURO = [[0, "#FBF7EC"], [0.5, "#D4AF37"], [1, "#5C4510"]]
+
+pio.templates["cp"] = go.layout.Template(layout=dict(
+    font=dict(family="Inter, sans-serif", color=GRAFITE, size=13),
+    colorway=PALETA, paper_bgcolor="white", plot_bgcolor="white",
+    title=dict(font=dict(size=16, color=GRAFITE)),
+    xaxis=dict(gridcolor="#F1EBDA", zerolinecolor="#E5DCC3"),
+    yaxis=dict(gridcolor="#F1EBDA", zerolinecolor="#E5DCC3"),
+    legend=dict(bgcolor="rgba(0,0,0,0)"),
+    hoverlabel=dict(bgcolor="white", bordercolor=OURO, font_color=GRAFITE),
+))
+pio.templates.default = "plotly_white+cp"
+px.defaults.template = "plotly_white+cp"
+px.defaults.color_discrete_sequence = PALETA
+
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+html, body, [class*="css"], [data-testid="stAppViewContainer"] {{ font-family: 'Inter', sans-serif; }}
+[data-testid="stAppViewContainer"], [data-testid="stHeader"] {{ background: #FFFFFF; }}
+[data-testid="stSidebar"] {{ background: linear-gradient(180deg, #FFFDF7 0%, {OURO_CLARO} 100%);
+    border-right: 1px solid #EADFBF; }}
+[data-testid="stSidebar"] * {{ color: {GRAFITE}; }}
+.block-container {{ padding-top: 1.5rem; max-width: 1300px; }}
+h1, h2, h3 {{ color: {GRAFITE}; letter-spacing: -0.01em; }}
+h2, h3 {{ border-left: 4px solid {OURO}; padding-left: .6rem; }}
+
+.cp-hero {{ background: linear-gradient(120deg, #FFFFFF 0%, #FBF6E6 55%, #F3E6BC 100%);
+    border: 1px solid #EADFBF; border-radius: 20px; padding: 28px 34px; margin-bottom: 22px;
+    box-shadow: 0 10px 30px rgba(201,162,39,.12); }}
+.cp-marca {{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }}
+.cp-logo {{ width:46px; height:46px; border-radius:12px; display:flex; align-items:center;
+    justify-content:center; font-weight:800; color:white; font-size:18px;
+    background: linear-gradient(135deg, {OURO} 0%, {OURO_ESC} 100%);
+    box-shadow: 0 6px 16px rgba(138,109,18,.35); }}
+.cp-nome {{ font-family:'Playfair Display', serif; font-size:26px; font-weight:700; color:{GRAFITE}; }}
+.cp-nome span {{ color:{OURO}; }}
+.cp-tag {{ font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:{OURO_ESC}; font-weight:600; }}
+.cp-titulo {{ font-size:34px; font-weight:800; color:{GRAFITE}; line-height:1.15; margin:6px 0 8px; }}
+.cp-titulo b {{ background: linear-gradient(90deg, {OURO} 0%, {OURO_ESC} 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }}
+.cp-sub {{ color:#4B5563; font-size:15px; }}
+
+[data-testid="stMetric"] {{ background:#FFFFFF; border:1px solid #EFE6CB; border-top:4px solid {OURO};
+    border-radius:16px; padding:16px 18px; box-shadow:0 4px 14px rgba(31,36,48,.06); }}
+[data-testid="stMetricLabel"] p {{ color:#6B7280; font-weight:600; text-transform:uppercase;
+    font-size:12px; letter-spacing:.06em; }}
+[data-testid="stMetricValue"] {{ color:{GRAFITE}; font-weight:800; }}
+
+.stTabs [data-baseweb="tab-list"] {{ gap:6px; border-bottom:1px solid #EFE6CB; }}
+.stTabs [data-baseweb="tab"] {{ border-radius:12px 12px 0 0; padding:10px 18px; font-weight:600; color:#6B7280; }}
+.stTabs [aria-selected="true"] {{ background:{OURO_CLARO}; color:{OURO_ESC} !important; }}
+.stTabs [data-baseweb="tab-highlight"] {{ background-color:{OURO} !important; }}
+
+[data-testid="stPlotlyChart"] {{ background:white; border:1px solid #F1EBDA; border-radius:16px;
+    padding:8px; box-shadow:0 2px 10px rgba(31,36,48,.04); }}
+[data-testid="stVerticalBlockBorderWrapper"] {{ border-color:#EFE6CB !important; border-radius:14px !important; }}
+a {{ color:{OURO_ESC} !important; font-weight:600; }}
+/* força o tema claro mesmo se o navegador estiver em modo escuro */
+[data-testid="stAppViewContainer"] *, [data-testid="stSidebar"] * {{ color:{GRAFITE}; }}
+[data-baseweb="select"] > div, [data-baseweb="input"], [data-baseweb="popover"] *,
+[data-testid="stFileUploaderDropzone"], [data-testid="stExpander"] details {{
+    background-color:#FFFFFF !important; color:{GRAFITE} !important; border-color:#E5DCC3 !important; }}
+[data-baseweb="tag"] {{ background-color:{OURO} !important; }}
+[data-baseweb="tag"] * {{ color:white !important; }}
+[data-testid="stMetricDelta"] svg {{ fill:currentColor; }}
+.cp-rodape {{ text-align:center; color:#9CA3AF; font-size:12px; padding:18px 0 4px; }}
+.cp-rodape b {{ color:{OURO_ESC}; }}
+</style>
+""", unsafe_allow_html=True)
 
 PASTA = Path(__file__).parent
 ARQ_DADOS = PASTA / "dados" / "censo_municipios_2010_2022.csv"
@@ -41,15 +116,17 @@ GRANDES_GRUPOS = pd.DataFrame({
     "65 anos ou mais": [4.0, 4.8, 5.9, 7.4, 10.9],
 })
 
-COR_H, COR_M = "#2563eb", "#db2777"
+COR_H, COR_M = GRAFITE, OURO
+CORES_REGIAO = {"Norte": "#C9A227", "Nordeste": "#8A6D12", "Sudeste": "#1F2430",
+                "Sul": "#6B7280", "Centro-Oeste": "#E3C565"}
 
 
 def mostrar(fig):
     """Exibe gráfico Plotly ocupando a largura toda (compatível com versões do Streamlit)."""
     try:
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, width="stretch", theme=None)
     except TypeError:
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
 
 def tabela(df):
@@ -133,7 +210,10 @@ def carregar_piramide(cod_local: int, nivel: str) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------ SIDEBAR
-st.sidebar.title("📊 Filtros")
+st.sidebar.markdown(
+    '<div class="cp-marca"><div class="cp-logo">CP</div>'
+    '<div class="cp-nome">CP <span>Analytics</span></div></div>', unsafe_allow_html=True)
+st.sidebar.markdown("### Filtros")
 st.sidebar.caption("Censo Demográfico IBGE · 2010 x 2022")
 
 with st.sidebar.expander("📤 Upload de dados (opcional)"):
@@ -169,12 +249,17 @@ if base.empty:
     st.stop()
 
 # ------------------------------------------------------------------ CABEÇALHO
-st.title("📈 Crescimento Populacional e Envelhecimento")
-st.markdown(
-    "**Para:** Carlos (Curitiba), Eduardo (Porto Alegre), Elisa (Belo Horizonte), "
-    "Jorge (Salvador) e Roberto (Florianópolis) · revisão dos Planos Diretores e do "
-    "orçamento de saúde e infraestrutura urbana."
-)
+st.markdown("""
+<div class="cp-hero">
+  <div class="cp-marca"><div class="cp-logo">CP</div>
+    <div><div class="cp-nome">CP <span>Analytics</span></div>
+    <div class="cp-tag">Inteligência em dados demográficos</div></div></div>
+  <div class="cp-titulo">Crescimento Populacional e <b>Envelhecimento</b></div>
+  <div class="cp-sub">Relatório para Carlos (Curitiba), Eduardo (Porto Alegre), Elisa (Belo Horizonte),
+  Jorge (Salvador) e Roberto (Florianópolis) · revisão dos Planos Diretores e do orçamento
+  de saúde e infraestrutura urbana · Censo IBGE 2010 x 2022</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------ KPIs
 p10, p22 = base["pop_2010_comp"].sum(), base["pop_2022"].sum()
@@ -211,7 +296,7 @@ with aba1:
                             color=col_val, hover_name="UF",
                             hover_data={"pop_2010_comp": ":,", "pop_2022": ":,",
                                         "taxa_anual": ":.2f"},
-                            color_continuous_scale="RdYlGn" if col_val == "taxa_anual" else "Blues",
+                            color_continuous_scale=ESCALA_OURO,
                             labels={col_val: rotulo, "pop_2010_comp": "Pop. 2010",
                                     "pop_2022": "Pop. 2022", "taxa_anual": "Taxa a.a. (%)"})
         fig.update_geos(fitbounds="locations", visible=False)
@@ -220,7 +305,8 @@ with aba1:
     else:
         st.info("Não foi possível baixar o contorno dos estados. Exibindo ranking.")
     fig = px.bar(uf.sort_values(col_val), x=col_val, y="UF", color="regiao",
-                 orientation="h", labels={col_val: rotulo, "regiao": "Região"})
+                 orientation="h", labels={col_val: rotulo, "regiao": "Região"},
+                 color_discrete_map=CORES_REGIAO)
     fig.add_vline(x=0.52, line_dash="dash", annotation_text="Brasil 0,52%") \
         if col_val == "taxa_anual" else None
     fig.update_layout(height=max(350, 22 * len(uf)))
@@ -270,7 +356,7 @@ with aba2:
     st.markdown("**Transição demográfica no Brasil (1980 → 2022)**")
     gg = GRANDES_GRUPOS.melt(id_vars="Ano", var_name="Grupo", value_name="%")
     fig = px.bar(gg, x="Ano", y="%", color="Grupo", barmode="stack", text="%",
-                 color_discrete_sequence=["#60a5fa", "#94a3b8", "#f97316"])
+                 color_discrete_sequence=["#E3C565", "#D1D5DB", GRAFITE])
     fig.update_xaxes(type="category")
     mostrar(fig)
 
@@ -296,7 +382,7 @@ with aba3:
                            "População": r["pop_2022"] * (1 + r["taxa_anual"] / 100) ** (a - 2022)})
     proj = pd.DataFrame(linhas)
     fig = px.line(proj, x="Ano", y="População", color="Local", markers=False)
-    fig.add_vrect(x0=2022, x1=ano_proj, fillcolor="gray", opacity=0.08,
+    fig.add_vrect(x0=2022, x1=ano_proj, fillcolor=OURO, opacity=0.08,
                   annotation_text="projeção", line_width=0)
     fig.update_layout(height=480)
     mostrar(fig)
@@ -307,10 +393,10 @@ with aba3:
     fut["População"] = 203_080_756 * (1 + tx_br) ** (fut["Ano"] - 2022)
     fig = go.Figure()
     fig.add_scatter(x=SERIE_BRASIL["Ano"], y=SERIE_BRASIL["População"], mode="lines+markers",
-                    name="Censos", line=dict(color="#0f766e", width=3))
+                    name="Censos", line=dict(color=OURO, width=3), marker=dict(size=9))
     fig.add_scatter(x=[2022] + fut["Ano"].tolist(), y=[203_080_756] + fut["População"].tolist(),
                     mode="lines+markers", name="Projeção (0,52% a.a.)",
-                    line=dict(color="#0f766e", dash="dash"))
+                    line=dict(color=OURO_ESC, dash="dash"))
     fig.update_layout(height=380, yaxis_title="População")
     mostrar(fig)
 
@@ -323,6 +409,7 @@ with aba4:
     st.caption(f"Critério de Tukey (IQR): outliers são municípios com taxa anual abaixo de "
                f"{lim_inf:.2f}% ou acima de {lim_sup:.2f}%.".replace(".", ","))
     fig = px.box(base, x="regiao", y="taxa_anual", color="regiao", points="outliers",
+                 color_discrete_map=CORES_REGIAO,
                  hover_name="municipio", hover_data={"UF": True, "pop_2022": ":,"},
                  labels={"taxa_anual": "Taxa anual (%)", "regiao": "Região"})
     fig.add_hline(y=0, line_color="gray")
@@ -330,13 +417,14 @@ with aba4:
     mostrar(fig)
 
     fig = px.scatter(base, x="pop_2010_comp", y="taxa_anual", color="regiao", log_x=True,
+                     color_discrete_map=CORES_REGIAO,
                      hover_name="municipio", hover_data={"UF": True},
                      labels={"pop_2010_comp": "População 2010 (escala log)",
                              "taxa_anual": "Taxa anual (%)", "regiao": "Região"}, opacity=0.6)
     caps = base[base.apply(lambda r: CAPITAIS_PERSONA.get(r["municipio"]) == r["UF"], axis=1)]
     fig.add_scatter(x=caps["pop_2010_comp"], y=caps["taxa_anual"], mode="markers+text",
                     text=caps["municipio"], textposition="top center", name="Capitais da persona",
-                    marker=dict(size=14, color="black", symbol="star"))
+                    marker=dict(size=16, color=OURO, symbol="star", line=dict(color=GRAFITE, width=1.5)))
     fig.update_layout(height=520)
     mostrar(fig)
 
@@ -393,7 +481,7 @@ with aba5:
         with st.container(border=True):
             st.markdown(f"**[{titulo}]({link})**  \n*{fonte}*  \n{resumo}")
 
-st.divider()
+st.markdown('<div class="cp-rodape">Desenvolvido por <b>CP Analytics</b> · Arthur Bernard · Júlio Souza · Moisés Caldeira · Pedro Henrique</div>', unsafe_allow_html=True)
 st.caption("Fonte: IBGE, Censo Demográfico 2022: População e Domicílios, Primeiros Resultados "
            "(população 2010 compatibilizada com a malha de 2022); IBGE/SIDRA Tabela 9514. "
            "Taxa de crescimento geométrico: ((P2022/P2010)^(1/12) − 1) × 100.")
